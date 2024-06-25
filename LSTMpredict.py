@@ -78,6 +78,8 @@ class LSTMpredict:
         self.reference_dict = self.model_tokens['reference_dict']
         self.reference_dict_val = set(self.reference_dict.values())
 
+        # self.len_dict = self.model_tokens['len_dict']
+
         with open(MODEL_TOKEN_UNITS_INFO_PATH, 'r') as json_file:
             self.model_tokens = json.load(json_file)
 
@@ -100,15 +102,15 @@ class LSTMpredict:
 
         # Read file to get category names list information
         with open(GROUND_TRUTH_FILE_PATH, 'r') as f:
-            ground_truth = json.load(f)
+            self.ground_truth = json.load(f)
 
-        self.names_set = {0 : set(ground_truth['archive_types']), 1: set(ground_truth['proxy_obs_types']),
-                      2: set(ground_truth['units']), 3: set(ground_truth['int_var']), 4: set(ground_truth['int_var_det']),
-                      5: set(ground_truth['inf_var']), 6: set(ground_truth['inf_var_units'])}
+        self.names_set = {0 : set(self.ground_truth['archive_types']), 1: set(self.ground_truth['proxy_obs_types']),
+                      2: set(self.ground_truth['units']), 3: set(self.ground_truth['int_var']), 4: set(self.ground_truth['int_var_det']),
+                      5: set(self.ground_truth['inf_var']), 6: set(self.ground_truth['inf_var_units'])}
         for i in range(6):
             self.names_set[i] = {val.replace(' ', '') for val in self.names_set[i]}
 
-        self.archives_map = ground_truth['archives_map']
+        self.archives_map = self.ground_truth['archives_map']
 
 
     def predict(self, device, net, words, vocab_to_int, int_to_vocab, names_set):
@@ -139,7 +141,9 @@ class LSTMpredict:
         '''
 
         net.eval()
-        top_k = 10
+        self.topk = 5
+        if len(words) == 1:
+            self.topk=12
         state_h, state_c = net.zero_state(1)
         state_h = state_h.to(device)
         state_c = state_c.to(device)
@@ -149,7 +153,7 @@ class LSTMpredict:
             ix = torch.tensor([[vocab_to_int[w]]]).to(device)
             output, (state_h, state_c) = net(ix, (state_h, state_c))
 
-        _, top_ix = torch.topk(output[0], k=top_k)
+        _, top_ix = torch.topk(output[0], k=self.topk)
         choices = top_ix.tolist()
 
         output = []

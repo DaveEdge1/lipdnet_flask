@@ -186,7 +186,6 @@ def get_archives():
     covered = {'MarineSediment', 'LakeSediment', 'GlacierIce', 'GroundIce', 'TerrestrialSediment', 'MollusckShell','MolluskShell', 'MolluskShells', 'molluskshell'}
     final_arch = set()
     for key,value in archives_map.items():
-        print(key,value)
         if key in covered:
             continue
         elif key.title() in archives_map:
@@ -206,6 +205,7 @@ def predict_next_value():
         example: archive = Marine Sediment & proxy observation type = D18O, sea water. Please replace the ',' in the proxy observation type before creating the input sentence for the API
 
     '''
+
     inputstr  = request.args.get('inputstr', None)
     inputstr = inputstr.replace('_','/')
     variabletype  = request.args.get('variableType', 'measured')
@@ -232,15 +232,16 @@ def predict_next_value():
         inputstr = (',').join(inputs)
         if inputs[0] in archives_for_MC:
             return predict_using_markov_chains(variabletype, inputstr)
+        print('Request made with input string {}'.format(inputstr))
         return predict_using_lstm(variabletype, inputstr)
 
     elif variabletype == 'time':
-        if len(inputs) == 1 and inputs[0] in set(time_map.keys()):
-            return make_response(jsonify({'result': {'0': time_map[inputs[0]]}}), 200)
+        if len(inputs) == 2 and inputs[1] in set(time_map.keys()):
+            return make_response(jsonify({'result': {'0': time_map[inputs[1]]}}), 200)
         return make_response(jsonify({'result': {'0' : list(time_map.keys())}}), 200)
 
     elif variabletype == 'depth':
-        if len(inputs) == 1 and inputs[0] == 'Depth':
+        if len(inputs) == 2 and inputs[1] == 'Depth':
             return make_response(jsonify({'result': {'0' : ['m', 'cm', 'mm']}}), 200)
         return make_response(jsonify({'result': {'0' : ['Depth']}}), 200)
 
@@ -383,10 +384,19 @@ def predict_using_lstm(variabletype, sentence):
         result_list = predLSTM.predictForSentence(sentence, isInferred=(True if variabletype=='inferred' else False))['1']
         result_list_units = [(inverse_ref_dict_u[val] if val in inverse_ref_dict_u else val) for val in result_list_units]
         result_list = [(inverse_ref_dict[val] if val in inverse_ref_dict else val) for val in result_list]
+        if 'NA' in result_list_units:
+            result_list_units.remove('NA')
+            result_list_units.append('Unitless')
+        if len(result_list) > 1 and 'NA' in result_list:
+            result_list.remove('NA')
         output = {0: result_list_units, 1: result_list}
     else:
         result_list = predLSTM.predictForSentence(sentence, isInferred=(True if variabletype=='inferred' else False))['0']
         result_list = [(inverse_ref_dict[val] if val in inverse_ref_dict else val) for val in result_list]
+        if len(inputs) == 1 and 'NA' in result_list:
+            result_list.remove('NA')
+        elif len(result_list) > 1 and 'NA' in result_list:
+            result_list.remove('NA')
         output = {0: result_list}
 
     return make_response(jsonify({'result': output}), 200)
