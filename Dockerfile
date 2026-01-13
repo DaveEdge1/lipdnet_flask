@@ -1,6 +1,6 @@
 FROM python:3.8-slim
 
-WORKDIR /app
+WORKDIR /application
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -20,7 +20,7 @@ COPY . .
 ENV FLASK_APP=flask_app.py
 ENV FLASK_ENV=production
 ENV PYTHONUNBUFFERED=1
-ENV FLASK_APP_DIR=/app/
+ENV FLASK_APP_DIR=/application/
 
 # Expose port (matches external access at http://64.23.255.172:3002)
 EXPOSE 3002
