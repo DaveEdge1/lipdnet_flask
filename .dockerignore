@@ -1,0 +1,12 @@
+# Exclude empty __init__.py that causes package import issues
+__init__.py
+
+# Exclude unnecessary files
+__pycache__/
+*.pyc
+.git/
+.github/
+.claude/
+*.log
+.env
+.gitignore
